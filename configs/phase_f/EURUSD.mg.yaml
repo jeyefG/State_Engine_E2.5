@@ -1,0 +1,61 @@
+version: 1
+symbol: "EURUSD.mg"
+
+limits:
+  max_positions: 1
+  max_trades_per_day: 6
+  daily_stop_R: -1.5
+  allow_overlapping_trades: false
+
+go_thresholds:
+  # Gates de inclusión definidos sobre research registry, no sobre OOS.
+  min_n_bars: 150
+  #min_n_days: 30
+  min_uplift_pp: 5.0
+  min_wf_score: 0.0
+
+context_resolution:
+  priority:
+    - "STATE_QL_LF"
+    - "STATE_LF"
+    - "STATE_QL"
+    - "STATE"
+  none_token: "NONE"
+
+lf_synth:
+  none_token: "NONE"
+  prefix: "LOOK_FOR_"
+  priority:
+    - "LOOK_FOR_trend_reinforcement_clean"
+
+risk_profiles:
+  RP_TCP:
+    risk_per_trade: 0.005
+    cooldown_bars: 4
+    time_stop_bars: 16
+    trailing: true
+
+templates:
+  TCP:
+    entry:
+      trigger_type: "PULLBACK_SIMPLE"
+      trigger_window_bars: 6
+    exits:
+      invalidate_on_context_block: true
+
+go_contexts:
+
+  # TREND_ONLY — motor superviviente OOS
+  - context_key: "STATE=TREND|QL=TREND_STRONG|LF=LOOK_FOR_trend_reinforcement_clean"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=NONE|LF=LOOK_FOR_trend_reinforcement_clean"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+risk_off: []

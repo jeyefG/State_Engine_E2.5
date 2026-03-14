@@ -1,0 +1,24 @@
+symbol: XAUUSD.mg
+policy_path: configs\phase_f\XAUUSD.mg.yaml
+symbol_config_path: configs\symbols\XAUUSD.mg.yaml
+barstream_path: outputs\phase_d_context\phase_d_context_base_XAUUSD.mg_H2_2023-01-01_2025-12-31.parquet
+registry_csv_paths:
+- outputs\phase_e\XAUUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\XAUUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_filtered.csv
+- outputs\phase_e\XAUUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\XAUUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_ql_filtered.csv
+out_dir: outputs\phase_f_runs\XAUUSD_frozen_from_research
+stats:
+  n_rows: 9233
+  decision_counts:
+    BLOCK: 6218
+    ALLOW: 3015
+  none_lf_rate: 0.6390122387089786
+  baseline_id_null_rate: 0.6390122387089786
+  baseline_id_counts:
+    'NULL': 5900
+    STATE_REINFORCEMENT: 716
+    TRANSITION_PERSISTENCE: 1672
+    BALANCE_STABILITY: 922
+    TRANSITION_RESOLUTION: 23
+  top1_candidate_match_rate: null
+  lf_context_mismatch_count: 318
+  ql_context_mismatch_count: 7285

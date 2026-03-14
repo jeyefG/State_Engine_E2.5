@@ -1,0 +1,50 @@
+phase_d:
+  enabled: true
+  look_fors:
+    LOOK_FOR_balance_overnight_compression:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      filters:
+        sessions_in:
+        - ASIA
+        - NY_PM
+      state_age_min: 2
+      state_age_max: 8
+      dist_vwap_atr_max: 0.4
+      reentry_min: 1
+    LOOK_FOR_transition_repricing_london:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      filters:
+        sessions_in:
+        - LONDON
+      state_age_max: 6
+      breakmag_min: 0.3
+      dist_vwap_atr_min: 0.8
+    LOOK_FOR_transition_repricing_ny:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      filters:
+        sessions_in:
+        - NY
+      state_age_max: 6
+      breakmag_min: 0.3
+      dist_vwap_atr_min: 0.8
+    LOOK_FOR_trend_pullback_asia:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      filters:
+        sessions_in:
+        - ASIA
+      state_age_min: 3
+      dist_vwap_atr_max: 1.0
+phase_e:
+  narrative_to_baseline:
+    LOOK_FOR_balance_overnight_compression: BALANCE_DEGRADATION
+    LOOK_FOR_transition_repricing_london: TRANSITION_RESOLUTION
+    LOOK_FOR_transition_repricing_ny: TRANSITION_PERSISTENCE
+    LOOK_FOR_trend_pullback_asia: STATE_REINFORCEMENT

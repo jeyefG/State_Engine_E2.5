@@ -1,0 +1,8 @@
+# TOPLINE
+symbol,entry_mode,mode,time_stop_bars,setup_families,side,trigger_unit,allow_overlapping_trades,max_positions,use_spread,has_spread_column,point_size,mean_spread_ret,exit_mode,arm_state_value,catastrophic_sl_bps,tp_k,sl_k,n_trades,trades_per_week,ev_per_trade,ev_month_est,winrate,max_drawdown
+US500.spot.mg,next_open,long,10,transition_resolution,LONG,bars,False,1,True,True,0.01,0.00020995201494644253,fixed,2.0,350.0,1.5,1.0,48,0.46153846153846156,0.0005429295015587609,0.0010850237269612777,0.5208333333333334,-0.02266824587413252
+
+# YEARLY
+year,trades,ev_trade,winrate,p5,p50,p95
+2023,26,0.00033341644004224153,0.5,-0.005558700227622173,-0.0005172868347647319,0.006832550459795615
+2024,22,0.0007905358469873744,0.5454545454545454,-0.003874766998349865,0.0014894192444042244,0.004941185150150766

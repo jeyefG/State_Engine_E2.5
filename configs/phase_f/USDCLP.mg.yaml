@@ -1,0 +1,69 @@
+version: 1
+symbol: "USDCLP.mg"
+
+limits:
+  max_positions: 1
+  max_trades_per_day: 6
+  daily_stop_R: -1.5
+  allow_overlapping_trades: false
+
+go_thresholds:
+  min_n_bars: 120
+  min_uplift_pp: 1.0
+  min_wf_score: 0.0
+
+context_resolution:
+  priority:
+    - "STATE_QL_LF"
+    - "STATE_LF"
+    - "STATE_QL"
+    - "STATE"
+  none_token: "NONE"
+
+lf_synth:
+  none_token: "NONE"
+  prefix: "LOOK_FOR_"
+  priority:
+    - "LOOK_FOR_transition_dislocated_from_vwap"
+    - "LOOK_FOR_transition_repricing_near_vwap"
+    - "LOOK_FOR_balance_dislocated_from_vwap"
+
+risk_profiles:
+  RP_STD:
+    risk_per_trade: 0.005
+    cooldown_bars: 2
+    time_stop_bars: 12
+    trailing: false
+
+templates:
+  STD:
+    entry:
+      trigger_type: "PULLBACK_SIMPLE"
+      trigger_window_bars: 4
+    exits:
+      invalidate_on_context_block: true
+
+go_contexts:
+
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_UNCLASSIFIED|LF=LOOK_FOR_transition_dislocated_from_vwap"
+    trade_template: "STD"
+    risk_profile: "RP_STD"
+    direction_policy: "BOTH"
+    expected_baseline_id: "TRANSITION_RESOLUTION"
+    sessions_allow: ["NY", "NY_PM"]
+
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_UNCLASSIFIED|LF=LOOK_FOR_transition_repricing_near_vwap"
+    trade_template: "STD"
+    risk_profile: "RP_STD"
+    direction_policy: "BOTH"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+    sessions_allow: ["NY", "NY_PM"]
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_dislocated_from_vwap"
+    trade_template: "STD"
+    risk_profile: "RP_STD"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_DEGRADATION"
+    sessions_allow: ["NY", "NY_PM"]
+
+risk_off: []

@@ -1,0 +1,23 @@
+symbol: EURUSD.mg
+policy_path: configs\phase_f\EURUSD.mg.yaml
+symbol_config_path: configs\symbols\EURUSD.mg.yaml
+barstream_path: outputs\phase_d_context\phase_d_context_base_EURUSD.mg_H2_2023-01-01_2024-12-31.parquet
+registry_csv_paths:
+- outputs\phase_e\EURUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\EURUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_filtered.csv
+- outputs\phase_e\EURUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\EURUSD.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_ql_filtered.csv
+out_dir: outputs\phase_f_runs\EURUSD_trend_research
+stats:
+  n_rows: 6293
+  decision_counts:
+    BLOCK: 6189
+    ALLOW: 104
+  none_lf_rate: 0.8703321150484665
+  baseline_id_null_rate: 0.8703321150484665
+  baseline_id_counts:
+    'NULL': 5477
+    STATE_REINFORCEMENT: 104
+    BALANCE_STABILITY: 222
+    TRANSITION_NOISE: 490
+  top1_candidate_match_rate: null
+  lf_context_mismatch_count: 712
+  ql_context_mismatch_count: 6203

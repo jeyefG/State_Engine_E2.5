@@ -1,0 +1,100 @@
+# -------------------------------------------------
+# Phase D — LOOK_FOR (EURUSD)
+# Ampliación ontológica mínima (sin agenda direccional)
+# -------------------------------------------------
+phase_d:
+  enabled: true
+  look_fors:
+
+    # -----------------------
+    # BALANCE
+    # -----------------------
+
+    # Balance corto típico EUR (rotación breve)
+    LOOK_FOR_balance_short_lived:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_max: 4
+      dist_vwap_atr_max: 0.8
+
+    # NUEVO — Balance en compresión estructural
+    LOOK_FOR_balance_compression:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 2
+      state_age_max: 10
+      dist_vwap_atr_max: 0.6
+      breakmag_max: 0.25
+
+    # -----------------------
+    # TRANSITION
+    # -----------------------
+
+    # Transición dominante EUR: rotación/fallo sin impulso
+    LOOK_FOR_transition_rotation_no_impulse:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_max: 8
+      dist_vwap_atr_max: 1.2
+      breakmag_max: 0.35
+      reentry_min: 1.0
+
+    # NUEVO — Transición limpia (menos ruido, más resolución estructural)
+    LOOK_FOR_transition_resolution_clean:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 2
+      state_age_max: 6
+      dist_vwap_atr_min: 0.6
+      breakmag_min: 0.35
+
+    # -----------------------
+    # TREND
+    # -----------------------
+
+    # Tendencia ordenada cerca de VWAP
+    LOOK_FOR_trend_persistent_near_vwap:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 4
+      state_age_max: 10
+      dist_vwap_atr_max: 1.0
+
+    # NUEVO — Tendencia ordenada con pullback estructural
+    LOOK_FOR_trend_orderly_pullback:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 3
+      state_age_max: 12
+      dist_vwap_atr_max: 1.3
+      reentry_min: 0.8
+      
+# -------------------------------------------------
+# Phase E — narrative -> baseline mapping (EURUSD)
+# -------------------------------------------------
+phase_e:
+  narrative_to_baseline:
+
+    # TREND: ok mantener fragility (se ve algo en 2024/2025 aunque cae)
+    LOOK_FOR_trend_persistent_near_vwap: STATE_FRAGILITY
+    LOOK_FOR_trend_orderly_pullback: STATE_FRAGILITY
+
+    # TRANSITION: cambiar lente a "fallback a balance" (FX)
+    LOOK_FOR_transition_rotation_no_impulse: TRANSITION_FALLBACK_TO_BALANCE
+    LOOK_FOR_transition_resolution_clean: TRANSITION_FALLBACK_TO_BALANCE
+
+    # BALANCE: cambiar lente a "leak a transition" (degradaci�n) en vez de escape a TREND
+    LOOK_FOR_balance_short_lived: BALANCE_LEAK_TO_TRANSITION
+    LOOK_FOR_balance_compression: BALANCE_LEAK_TO_TRANSITION

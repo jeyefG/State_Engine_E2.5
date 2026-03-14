@@ -1,0 +1,53 @@
+# -------------------------------------------------
+# Phase D LOOK_FOR (GBPUSD) - Exploratory pool
+# TF/Window: H2 / 24
+# Purpose: test rare, orthogonal micro-narratives
+# One run only. No tuning after.
+# -------------------------------------------------
+
+phase_d:
+  enabled: true
+  look_fors:
+
+    LOOK_FOR_balance_short_lived_asia:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [ASIA]
+      state_age_max: 4
+      dist_vwap_atr_max: 0.8
+
+    LOOK_FOR_balance_short_lived_nypm:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [NY_PM]
+      state_age_max: 4
+      dist_vwap_atr_max: 0.8
+
+    LOOK_FOR_balance_compression_asia:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [ASIA]
+      state_age_min: 2
+      state_age_max: 8
+      dist_vwap_atr_max: 0.6
+      breakmag_max: 0.25
+
+    LOOK_FOR_balance_compression_west:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [LONDON, NY_PM]
+      state_age_min: 2
+      state_age_max: 8
+      dist_vwap_atr_max: 0.6
+      breakmag_max: 0.25
+
+phase_e:
+  narrative_to_baseline:
+    LOOK_FOR_balance_short_lived_asia: BALANCE_STABILITY
+    LOOK_FOR_balance_short_lived_nypm: BALANCE_STABILITY
+    LOOK_FOR_balance_compression_asia: BALANCE_STABILITY
+    LOOK_FOR_balance_compression_west: BALANCE_STABILITY

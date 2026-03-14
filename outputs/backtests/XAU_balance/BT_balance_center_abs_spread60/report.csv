@@ -1,0 +1,9 @@
+# TOPLINE
+symbol,entry_mode,mode,time_stop_bars,setup_families,side,trigger_unit,allow_overlapping_trades,max_positions,use_spread,has_spread_column,point_size,mean_spread_ret,exit_mode,arm_state_value,catastrophic_sl_bps,tp_k,sl_k,n_trades,trades_per_week,ev_per_trade,ev_month_est,winrate,max_drawdown
+XAUUSD.mg,next_open,abs_move,18,balance_stability_center,BOTH,bars,True,3,True,True,0.01,0.00024993485330452816,fixed,2.0,350.0,40.0,25.0,462,2.958828911253431,-0.00024993485330452816,-0.0032020976546121085,0.0,-0.10877779343767802
+
+# YEARLY
+year,trades,ev_trade,winrate,p5,p50,p95
+2023,168,-0.00030964640625181047,0.0,-0.0003287279708667749,-0.00030954561700678935,-0.00029444874258271407
+2024,159,-0.00025177944665917584,0.0,-0.0002951418305282023,-0.0002482539472377611,-0.00021946252440211084
+2025,135,-0.00017345462190799184,0.0,-0.00021000824634154612,-0.00017812135407853372,-0.00013920034953434344

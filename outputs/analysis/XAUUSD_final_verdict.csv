@@ -1,0 +1,4 @@
+scope,engine,trades,ev_trade_net,ev_total_net,winrate,cost_status,verdict
+research_2023_2024_filtered,state_reinforcement_LONG_NY_NYPM,91,0.000803,0.073113,0.527473,INVALID_NET_SPREAD_ZERO,PENDING_COST_RE_AUDIT
+oos_2025_filtered,state_reinforcement_LONG_NY_NYPM,56,0.001176,0.065841,0.535714,MIXED_PRE_POST_SPREAD,PROMISING_BUT_NOT_CLEAN
+oos_2025_postspread_only,state_reinforcement_LONG_NY_NYPM,43,0.001339,0.057574,0.534884,VALID_NET,PROMISING_VALID_NET_SUBSAMPLE

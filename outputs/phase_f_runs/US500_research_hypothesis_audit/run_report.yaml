@@ -1,0 +1,24 @@
+symbol: US500.spot.mg
+policy_path: configs\phase_f\US500.spot.mg.yaml
+symbol_config_path: configs\symbols\US500.spot.mg.yaml
+barstream_path: outputs\phase_d_context\phase_d_context_base_US500.spot.mg_H2_2023-01-01_2024-12-31.parquet
+registry_csv_paths:
+- outputs\phase_e\US500.spot.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\US500.spot.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_filtered.csv
+- outputs\phase_e\US500.spot.mg_PhaseE_M30_2023-01-01_2024-12-31_edge_baseline\US500.spot.mg_PhaseE_M30_2023-01-01_2024-12-31_lookfor_state_ql_filtered.csv
+out_dir: outputs\phase_f_runs\US500_research_hypothesis_audit
+stats:
+  n_rows: 6141
+  decision_counts:
+    BLOCK: 5675
+    ALLOW: 466
+  none_lf_rate: 0.9163002768278782
+  baseline_id_null_rate: 0.9163002768278782
+  baseline_id_counts:
+    'NULL': 5627
+    BALANCE_STABILITY: 140
+    TRANSITION_RESOLUTION: 86
+    TRANSITION_PERSISTENCE: 36
+    STATE_REINFORCEMENT: 252
+  top1_candidate_match_rate: null
+  lf_context_mismatch_count: 48
+  ql_context_mismatch_count: 5583

@@ -1,0 +1,23 @@
+symbol: USDCLP.mg
+policy_path: configs\phase_f\USDCLP.mg.yaml
+symbol_config_path: configs\symbols\USDCLP.mg.yaml
+barstream_path: outputs\phase_d_context\phase_d_context_base_USDCLP.mg_H1_2023-01-01_2024-12-31.parquet
+registry_csv_paths:
+- outputs\phase_e\USDCLP.mg_PhaseE_M15_2023-01-01_2024-12-31_edge_baseline\USDCLP.mg_PhaseE_M15_2023-01-01_2024-12-31_lookfor_state_filtered.csv
+- outputs\phase_e\USDCLP.mg_PhaseE_M15_2023-01-01_2024-12-31_edge_baseline\USDCLP.mg_PhaseE_M15_2023-01-01_2024-12-31_lookfor_state_ql_filtered.csv
+out_dir: outputs\phase_f_runs\USDCLP_research
+stats:
+  n_rows: 4166
+  decision_counts:
+    BLOCK: 2691
+    ALLOW: 1475
+  none_lf_rate: 0.4757561209793567
+  baseline_id_null_rate: 0.4757561209793567
+  baseline_id_counts:
+    'NULL': 1982
+    TRANSITION_PERSISTENCE: 1517
+    BALANCE_DEGRADATION: 55
+    TRANSITION_RESOLUTION: 612
+  top1_candidate_match_rate: null
+  lf_context_mismatch_count: 709
+  ql_context_mismatch_count: 2691

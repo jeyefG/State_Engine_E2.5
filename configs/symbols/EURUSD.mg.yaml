@@ -1,0 +1,104 @@
+# -------------------------------------------------
+# Phase D — LOOK_FOR (EURUSD)
+# Research YAML de trabajo
+# Objetivo:
+# - cubrir mejor la hipótesis actual del símbolo
+# - mantener el set corto
+# - evitar LFs con nombre/baseline cruzados
+# -------------------------------------------------
+phase_d:
+  enabled: true
+  look_fors:
+
+    # -----------------------
+    # BALANCE
+    # -----------------------
+
+    # Balance reciente y centrado:
+    # no presupone leak ni escape; describe equilibrio joven cerca de referencia.
+    LOOK_FOR_balance_recent_centered:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_max: 4
+      dist_vwap_atr_max: 0.8
+
+    # Compresión contenida:
+    # balance más maduro, cerca de referencia y con breakmag bajo.
+    LOOK_FOR_balance_compression:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 2
+      state_age_max: 10
+      dist_vwap_atr_max: 0.6
+      breakmag_max: 0.25
+
+
+    # -----------------------
+    # TRANSITION
+    # -----------------------
+
+    # Rotación sin impulso:
+    # transición que rota, reingresa y no despega limpiamente.
+    LOOK_FOR_transition_rotation_no_impulse:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_max: 8
+      dist_vwap_atr_max: 1.2
+      breakmag_max: 0.35
+      reentry_min: 1.0
+
+    # Resolución limpia en sesión donde esperamos más capacidad de resolver:
+    # transición con desplazamiento / breakmag suficiente para ir a trend.
+    LOOK_FOR_transition_resolution_clean:
+      enabled: false
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [LONDON]
+      state_age_min: 2
+      state_age_max: 6
+      dist_vwap_atr_min: 0.6
+      breakmag_min: 0.35
+
+    # -----------------------
+    # TREND
+    # -----------------------
+
+    # Continuación limpia / refuerzo:
+    # trend ya activo, con suficiente desplazamiento desde referencia
+    # y señal mínima de iniciativa.
+    LOOK_FOR_trend_reinforcement_clean:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      sessions_in: [LONDON, NY]
+      state_age_min: 2
+      state_age_max: 8
+      dist_vwap_atr_min: 0.5
+      breakmag_min: 0.30
+
+# -------------------------------------------------
+# Phase E — narrative -> baseline mapping (EURUSD)
+# Lectura correcta:
+# - each LF compite contra la "normalidad estructural" de su dominio
+# - no se usa baseline por conveniencia estadística
+# -------------------------------------------------
+phase_e:
+  narrative_to_baseline:
+
+    # BALANCE
+    LOOK_FOR_balance_recent_centered: BALANCE_STABILITY
+    LOOK_FOR_balance_compression: BALANCE_STABILITY
+    LOOK_FOR_balance_leaking: BALANCE_DEGRADATION
+
+    # TRANSITION
+    LOOK_FOR_transition_rotation_no_impulse: TRANSITION_NOISE
+    LOOK_FOR_transition_resolution_clean: TRANSITION_RESOLUTION
+
+    # TREND
+    LOOK_FOR_trend_reinforcement_clean: STATE_REINFORCEMENT

@@ -1,0 +1,234 @@
+# -------------------------------------------------
+# Phase E - Baseline Registry (CANONICAL, CLOSED)
+# -------------------------------------------------
+# Propósito:
+# - Catálogo cerrado de lentes estructurales para Phase E
+# - Medición state-only (sin precio/ATR/volumen)
+# - Fuente única de verdad para interpretar uplift en Phase E
+#
+# Semántica general del runner actual:
+# - Para cada fila t, se evalúa la trayectoria futura de base_state en [t+1, ..., t+k]
+# - y se construye un y binario (1/0) según la propiedad definida por cada baseline
+# - las últimas k filas quedan en NaN por honestidad temporal
+#
+# Lectura correcta:
+# - Estos baselines miden propiedades estructurales within-K
+# - NO describen trayectorias económicas completas
+# - NO son mutuamente excluyentes
+# - Un mismo evento puede gatillar más de un baseline en la misma ventana K
+#
+# Ejemplo:
+# - una TRANSITION puede tocar BALANCE y TREND dentro de la misma ventana
+# - por lo tanto puede ser positiva tanto en TRANSITION_FALLBACK_TO_BALANCE
+#   como en TRANSITION_RESOLUTION
+#
+# Estado actual del catálogo:
+# - Se retiran por ahora los baselines problemáticos:
+#   * TRANSITION_POLARITY_BIAS
+#   * FALSE_SIGNAL_RETURN
+# - Se mantienen algunos aliases por claridad narrativa / compatibilidad conceptual,
+#   pero su cálculo es idéntico al baseline canónico correspondiente.
+# -------------------------------------------------
+
+phase_e:
+  baseline_registry:
+
+    # -------------------------
+    # Persistence / Fragility
+    # -------------------------
+
+    STATE_REINFORCEMENT:
+      description: "Current base_state stays the same for the next K score bars"
+      # Cálculo real:
+      # y=1 si en toda la ventana [t+1, ..., t+k] el estado futuro
+      # permanece igual al base_state actual.
+      # Equivale a NO salir del estado actual en toda la ventana.
+      y_id: STAY_IN_CURRENT_STATE_WITHIN_K
+      params: {}
+      better_is: HIGHER
+
+    STATE_FRAGILITY:
+      description: "Current base_state exits (changes) at least once within the next K score bars"
+      # Cálculo real:
+      # y=1 si existe al menos una barra futura en [t+1, ..., t+k]
+      # cuyo estado sea distinto al base_state actual.
+      y_id: EXIT_CURRENT_STATE_WITHIN_K
+      params: {}
+      better_is: HIGHER
+
+    # -------------------------
+    # Balance: Containment vs Escape
+    # -------------------------
+
+    BALANCE_CONTAINMENT:
+      description: "While in BALANCE, does NOT hit TREND within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] nunca aparece TREND.
+      # Nota:
+      # esto NO exige quedarse siempre en BALANCE;
+      # solo exige no tocar TREND dentro de la ventana.
+      y_id: NOT_HIT_STATE_WITHIN_K
+      params: { target: TREND }
+      better_is: HIGHER
+
+    BALANCE_ESCAPE:
+      description: "While in BALANCE, hits TREND within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] aparece TREND al menos una vez.
+      # Nota:
+      # no exige que TREND sea el primer hit ni que la trayectoria
+      # no pase antes por TRANSITION.
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: TREND }
+      better_is: HIGHER
+
+    # -------------------------
+    # Balance: stability vs degradation to TRANSITION
+    # -------------------------
+
+    BALANCE_STABILITY:
+      description: "While in BALANCE, does NOT hit TRANSITION within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] nunca aparece TRANSITION.
+      # Esta es la definición canónica operativa de estabilidad de balance
+      # en el runner actual.
+      y_id: NOT_HIT_STATE_WITHIN_K
+      params: { target: TRANSITION }
+      better_is: HIGHER
+
+    BALANCE_DEGRADATION:
+      description: "While in BALANCE, hits TRANSITION within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] aparece TRANSITION al menos una vez.
+      # Esta es la definición canónica operativa de degradación / leak.
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: TRANSITION }
+      better_is: HIGHER
+
+    # -------------------------
+    # Balance aliases (same calculation as canonicals above)
+    # -------------------------
+
+    BALANCE_NOT_LEAK_TO_TRANSITION:
+      description: "Alias of BALANCE_STABILITY: while in BALANCE, does NOT hit TRANSITION within K"
+      # Alias metodológico:
+      # mismo cálculo que BALANCE_STABILITY
+      y_id: NOT_HIT_STATE_WITHIN_K
+      params: { target: TRANSITION }
+      better_is: HIGHER
+
+    BALANCE_LEAK_TO_TRANSITION:
+      description: "Alias of BALANCE_DEGRADATION: while in BALANCE, hits TRANSITION within K"
+      # Alias metodológico:
+      # mismo cálculo que BALANCE_DEGRADATION
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: TRANSITION }
+      better_is: HIGHER
+
+    # -------------------------
+    # Transition: Resolution vs Noise
+    # -------------------------
+
+    TRANSITION_RESOLUTION:
+      description: "While in TRANSITION, hits TREND within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] aparece TREND al menos una vez.
+      # Nota:
+      # no exige que TREND sea el primer estado distinto,
+      # ni que la trayectoria no toque BALANCE dentro de la misma ventana.
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: TREND }
+      better_is: HIGHER
+
+    TRANSITION_NOISE:
+      description: "While in TRANSITION, does NOT hit TREND within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] nunca aparece TREND.
+      # Nota:
+      # una trayectoria puede ser TRANSITION_NOISE=1 y aun así tocar BALANCE.
+      y_id: NOT_HIT_STATE_WITHIN_K
+      params: { target: TREND }
+      better_is: HIGHER
+
+    # -------------------------
+    # Transition: fallback / mean-reversion to BALANCE
+    # -------------------------
+
+    TRANSITION_FALLBACK_TO_BALANCE:
+      description: "While in TRANSITION, hits BALANCE within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] aparece BALANCE al menos una vez.
+      # Nota:
+      # esto no excluye que también aparezca TREND dentro de la misma ventana.
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: BALANCE }
+      better_is: HIGHER
+
+    TRANSITION_NOT_FALLBACK_TO_BALANCE:
+      description: "While in TRANSITION, does NOT hit BALANCE within K"
+      # Cálculo real:
+      # y=1 si en [t+1, ..., t+k] nunca aparece BALANCE.
+      # Nota:
+      # esto no implica necesariamente resolución a TREND;
+      # podría simplemente persistir en TRANSITION.
+      y_id: NOT_HIT_STATE_WITHIN_K
+      params: { target: BALANCE }
+      better_is: HIGHER
+
+    # -------------------------
+    # Transition Persistence
+    # -------------------------
+
+    TRANSITION_PERSISTENCE:
+      description: "While in TRANSITION, stays in TRANSITION for the next K score bars"
+      # Cálculo real:
+      # y=1 si en toda la ventana [t+1, ..., t+k] el estado futuro
+      # sigue siendo TRANSITION.
+      # Es más exigente que TRANSITION_NOISE.
+      y_id: STAY_IN_CURRENT_STATE_WITHIN_K
+      params: {}
+      better_is: HIGHER
+
+    # -------------------------
+    # Transition aliases (same calculation as canonicals above)
+    # -------------------------
+
+    TRANSITION_BREAKOUT:
+      description: "Alias of TRANSITION_RESOLUTION: while in TRANSITION, hits TREND within K"
+      # Alias metodológico:
+      # mismo cálculo que TRANSITION_RESOLUTION
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: TREND }
+      better_is: HIGHER
+
+    TRANSITION_MEAN_REVERT:
+      description: "Alias of TRANSITION_FALLBACK_TO_BALANCE: while in TRANSITION, hits BALANCE within K"
+      # Alias metodológico:
+      # mismo cálculo que TRANSITION_FALLBACK_TO_BALANCE
+      y_id: HIT_STATE_WITHIN_K
+      params: { target: BALANCE }
+      better_is: HIGHER
+
+  # -------------------------
+  # Defaults (used if symbol does not override)
+  # -------------------------
+  default_baseline_by_state:
+    TREND: STATE_FRAGILITY
+    BALANCE: BALANCE_ESCAPE
+    TRANSITION: TRANSITION_NOISE
+
+  # -------------------------
+  # Control group policy (enum-closed)
+  # -------------------------
+  control_group_defaults:
+    # STRATUM_STATE_QL:
+    # - uplift de (STATE+QL) contra el parent STATE
+    STRATUM_STATE_QL: PARENT_ESTRATO
+
+    # STRATUM_STATE_QL_LF:
+    # - uplift de (STATE+QL+LF) contra el parent (STATE+QL)
+    STRATUM_STATE_QL_LF: PARENT_ESTRATO
+
+  allowed_control_group_modes:
+    - PARENT_ESTRATO
+    - GLOBAL_BASELINE

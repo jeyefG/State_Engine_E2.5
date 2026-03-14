@@ -1,0 +1,21 @@
+XAUUSD checkpoint
+
+winner_engine=state_reinforcement_LONG_NY_NYPM
+research_2023_2024_status=PENDING_COST_RE_AUDIT
+oos_2025_filtered_status=PROMISING_BUT_NOT_CLEAN
+oos_2025_postspread_only_status=PROMISING_VALID_NET_SUBSAMPLE
+
+key_findings:
+- research_2023_2024 spread historical MT5 = 0, net inválido para cierre fuerte
+- spread histórico usable aparece desde 2025-02-18 20:00:00
+- subsample postspread 2025 válido:
+  trades=43
+  ev_trade_net=0.001339
+  ev_total_net=0.057574
+  winrate=0.534884
+
+session_postspread:
+- NY trades=11 ev_trade_net=0.002312
+- NY_PM trades=31 ev_trade_net=0.001139
+
+final_box=PENDING_COST_RE_AUDIT

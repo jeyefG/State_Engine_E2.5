@@ -1,0 +1,138 @@
+version: 1
+symbol: "GBPUSD.mg"
+
+limits:
+  max_positions: 1
+  max_trades_per_day: 6
+  daily_stop_R: -1.5
+  allow_overlapping_trades: false
+
+go_thresholds:
+  min_n_bars: 200
+  min_uplift_pp: 5.0
+  min_wf_score: 0.0
+
+context_resolution:
+  priority:
+    - "STATE_QL_LF"
+    - "STATE_LF"
+    - "STATE_QL"
+    - "STATE"
+  none_token: "NONE"
+
+lf_synth:
+  none_token: "NONE"
+  prefix: "LOOK_FOR_"
+  priority:
+    - "LOOK_FOR_balance_short_lived_nypm"
+    - "LOOK_FOR_balance_compression_asia"
+    - "LOOK_FOR_balance_short_lived_asia"
+    - "LOOK_FOR_balance_compression_west"
+
+risk_profiles:
+  RP_TCP:
+    risk_per_trade: 0.005
+    cooldown_bars: 4
+    time_stop_bars: 16
+    trailing: true
+
+templates:
+  TCP:
+    entry:
+      trigger_type: "PULLBACK_SIMPLE"
+      trigger_window_bars: 6
+    exits:
+      invalidate_on_context_block: true
+      
+go_contexts:
+
+  # BALANCE fino — short lived NY_PM
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_short_lived_nypm"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["NY_PM"]
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_short_lived_nypm"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["NY_PM"]
+
+  # BALANCE fino — compression ASIA
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_compression_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_compression_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  # BALANCE fino — short lived ASIA
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_short_lived_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_short_lived_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  # BALANCE fino — compression WEST
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_compression_west"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["LONDON", "NY_PM"]
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_compression_west"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["LONDON", "NY_PM"]
+
+  # Fallbacks agregados
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_short_lived_nypm"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["NY_PM"]
+
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_compression_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_short_lived_asia"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["ASIA"]
+
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_compression_west"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+    sessions_allow: ["LONDON", "NY_PM"]
+
+risk_off: []

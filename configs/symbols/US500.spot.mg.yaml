@@ -1,0 +1,130 @@
+# -------------------------------------------------
+# Phase D LOOK_FOR (US500) v3
+# Detector-first ontology
+#
+# Regla metodológica:
+# - El nombre del LF describe el detector, no el outcome.
+# - La hipótesis económica queda en comentarios.
+# - Phase E falsifica la hipótesis con baseline canónico.
+# -------------------------------------------------
+
+phase_d:
+  enabled: true
+  look_fors:
+
+    # -------------------------------------------------
+    # Detector:
+    # Overnight / late-session compression inside BALANCE
+    #
+    # Hipótesis:
+    # En US500 este detector describe principalmente contención
+    # overnight / inventory hold dentro de BALANCE.
+    # No describe bien ni degradación hacia TRANSITION
+    # ni escape hacia TREND.
+    #
+    # Test Phase E propuesto:
+    # ¿permanece fuera de TRANSITION dentro de K?
+    # Baseline canónico asociado:
+    # BALANCE_STABILITY
+    # -------------------------------------------------
+    LOOK_FOR_balance_overnight_compression:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      filters:
+        sessions_in: ["ASIA", "NY_PM"]
+      state_age_min: 2
+      state_age_max: 8
+      dist_vwap_atr_max: 0.4
+      reentry_min: 1
+
+    # -------------------------------------------------
+    # Detector:
+    # Transition repricing in London
+    #
+    # Hipótesis:
+    # En US500 este detector describe principalmente repricing
+    # de transición que resuelve hacia TREND.
+    # Existe una cola menor de fallback a BALANCE,
+    # pero no es la lectura dominante.
+    #
+    # Test Phase E propuesto:
+    # ¿hit TREND within K?
+    # Baseline canónico asociado:
+    # TRANSITION_RESOLUTION
+    # -------------------------------------------------
+    LOOK_FOR_transition_repricing_london:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      filters:
+        sessions_in: ["LONDON"]
+      state_age_max: 6
+      breakmag_min: 0.3
+      dist_vwap_atr_min: 0.8
+
+    # -------------------------------------------------
+    # Detector:
+    # Transition repricing in NY
+    #
+    # Hipótesis:
+    # Detector separado para no mezclar la microestructura de NY
+    # con London.
+    # Por ahora esta familia NO forma parte del núcleo validado
+    # de la hipótesis de US500 y debe tratarse como exploratoria.
+    #
+    # Test Phase E actual:
+    # TRANSITION_PERSISTENCE (provisional, no cerrada)
+    # -------------------------------------------------
+    LOOK_FOR_transition_repricing_ny:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      filters:
+        sessions_in: ["NY"]
+      state_age_max: 6
+      breakmag_min: 0.3
+      dist_vwap_atr_min: 0.8
+
+    # -------------------------------------------------
+    # Detector:
+    # Orderly pullback in TREND during ASIA
+    #
+    # Hipótesis:
+    # En US500 este detector describe reload / continuation
+    # ordenada dentro de una tendencia viva.
+    #
+    # Test Phase E propuesto:
+    # ¿se refuerza / persiste el estado TREND dentro de K?
+    # Baseline canónico asociado:
+    # STATE_REINFORCEMENT
+    # -------------------------------------------------
+    LOOK_FOR_trend_pullback_asia:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      filters:
+        sessions_in: ["ASIA"]
+      state_age_min: 3
+      dist_vwap_atr_max: 1.0
+
+
+# -------------------------------------------------
+# Phase E — detector -> baseline mapping
+# Baselines canónicos cerrados.
+# Importante:
+# el baseline es la pregunta que hacemos a la hipótesis,
+# no una definición del LF.
+# -------------------------------------------------
+phase_e:
+  narrative_to_baseline:
+
+    # Compression overnight as precursor to leaving BALANCE
+    LOOK_FOR_balance_overnight_compression: BALANCE_STABILITY
+
+    # Repricing transitions as exploitable transition drift
+    LOOK_FOR_transition_repricing_london: TRANSITION_RESOLUTION
+    LOOK_FOR_transition_repricing_ny: TRANSITION_PERSISTENCE
+
+    # Trend pullback as continuation / reload
+    LOOK_FOR_trend_pullback_asia: STATE_REINFORCEMENT

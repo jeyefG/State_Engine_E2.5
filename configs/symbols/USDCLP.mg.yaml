@@ -1,0 +1,47 @@
+# -------------------------------------------------
+# Phase D - LOOK_FOR (USDCLP) | research freeze
+# Frozen research ontology:
+# - TRANSITION dislocated from VWAP -> resolution candidate
+# - TRANSITION near VWAP -> persistence / repricing candidate
+# - BALANCE dislocated from VWAP -> degradation candidate
+# Note:
+# - Fine edge is expected to emerge mainly at STATE_QL level
+# - NY / NY_PM are operational intraday blocks for this symbol
+# -------------------------------------------------
+
+phase_d:
+  enabled: true
+  look_fors:
+
+    LOOK_FOR_transition_repricing_near_vwap:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [NY, NY_PM]
+      state_age_min: 1
+      state_age_max: 30
+      dist_vwap_atr_max: 0.8
+
+    LOOK_FOR_transition_dislocated_from_vwap:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      sessions_in: [NY, NY_PM]
+      state_age_min: 1
+      state_age_max: 30
+      dist_vwap_atr_min: 1.2
+
+    LOOK_FOR_balance_dislocated_from_vwap:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      sessions_in: [NY, NY_PM]
+      state_age_min: 1
+      state_age_max: 20
+      dist_vwap_atr_min: 1.2
+
+phase_e:
+  narrative_to_baseline:
+    LOOK_FOR_transition_repricing_near_vwap: TRANSITION_PERSISTENCE
+    LOOK_FOR_transition_dislocated_from_vwap: TRANSITION_RESOLUTION
+    LOOK_FOR_balance_dislocated_from_vwap: BALANCE_DEGRADATION

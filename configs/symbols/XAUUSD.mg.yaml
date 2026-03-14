@@ -1,0 +1,184 @@
+# -------------------------------------------------
+# XAUUSD.mg — Symbol Config
+# Phase D LOOK_FOR narratives (descriptive, no signal)
+# Phase E baseline mapping (closed catalog via baseline_registry.yaml)
+# -------------------------------------------------
+
+phase_d:
+  enabled: true
+  look_fors:
+
+    # -------------------------
+    # BALANCE
+    # -------------------------
+
+    # 1) BALANCE: near VWAP, observable balance (mean-revert / containment)
+    LOOK_FOR_balance_vwap_proximity:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      dist_vwap_atr_max: 0.6
+      state_age_min: 2
+
+    # 2) BALANCE: extremos lejos del centro con propensión a colapsar hacia VWAP
+    # (mean-revert / containment)
+    LOOK_FOR_balance_extreme_to_center:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+
+      state_age_min: 3
+      dist_vwap_atr_min: 1.2
+      dist_vwap_atr_max: 3.0
+
+      breakmag_max: 1.0
+      reentry_min: 1
+
+    # 3) BALANCE: compression / coil (pre-escape context, non-directional)
+    # Idea: balance "maduro", cerca de VWAP, poca expansión (sin breakmag alto),
+    # y con reentry suficiente para asegurar que sigue siendo balance.
+    LOOK_FOR_balance_compression:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+
+      state_age_min: 3
+      dist_vwap_atr_max: 0.8
+
+      # evitar expansión / ruptura encubierta
+      breakmag_max: 0.8
+
+      # mantener "balance real"
+      reentry_min: 1
+
+    # ----------------------------------------------------------
+    # NEW: Balance VWAP Body Deviation (operable sub-context)
+    # Translation target: BALANCE_STABILITY (Phase E baseline)
+    # Captures moderate deviation (body), not extremes.
+    # ----------------------------------------------------------
+
+    LOOK_FOR_balance_vwap_body_deviation:
+      enabled: true
+      base_state: BALANCE
+      require_all: true
+      state_age_min: 3
+      dist_vwap_atr_min: 0.6
+      dist_vwap_atr_max: 0.9
+    
+    # -------------------------
+    # TREND
+    # -------------------------
+
+    # 4) TREND: orderly / strong trend (mature + far from VWAP)
+    LOOK_FOR_trend_strong_orderly:
+      enabled: true
+      base_state: TREND
+      require_all: true
+      state_age_min: 3
+      dist_vwap_atr_min: 0.5
+
+    # 5) TREND: liquidity sweep against trend (stop run + rejection)
+    LOOK_FOR_trend_liquidity_sweep:
+      enabled: true
+      base_state: TREND
+      require_all: true
+
+      state_age_min: 3
+      dist_vwap_atr_min: 0.4
+
+      breakmag_min: 1.2
+      reentry_min: 1
+
+    # 6) TREND: pullback estructural hacia VWAP previo (proxy)
+    LOOK_FOR_trend_prev_vwap_pullback:
+      enabled: true
+      base_state: TREND
+      require_all: true
+
+      state_age_min: 3
+      dist_vwap_atr_min: 0.4
+      dist_vwap_atr_max: 1.2
+
+      breakmag_max: 1.1
+      reentry_min: 1
+
+
+    # -------------------------
+    # TRANSITION
+    # -------------------------
+
+    # 7) TRANSITION: chop / noise near VWAP (typical)
+    LOOK_FOR_transition_chop_near_vwap:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+      dist_vwap_atr_max: 0.6
+      reentry_min: 1.0
+      state_age_max: 8
+
+    # 8) TRANSITION: acceptance / resolution (moves away from VWAP with expansion)
+    # Idea: transición corta (early), con expansión (breakmag) y no pegada al VWAP.
+    # No es direccional, solo "resuelve".
+    LOOK_FOR_transition_acceptance:
+      enabled: true
+      base_state: TRANSITION
+      require_all: true
+
+      state_age_max: 6
+
+      # no pegado al VWAP (no chop)
+      dist_vwap_atr_min: 0.6
+      dist_vwap_atr_max: 2.0
+
+      # expansión / impulso (aceptación)
+      breakmag_min: 1.0
+
+      # no exigir reentry (puede ser 0 si está aceptando)
+      # reentry_max: 0   # (solo si existe en tu engine; si no, déjalo fuera)
+
+
+# -------------------------------------------------
+# Phase E — narrative -> baseline mapping (closed catalog)
+# baseline_registry.yaml defines baseline_id -> y_id + params (state-only)
+# -------------------------------------------------
+phase_e:
+  narrative_to_baseline:
+
+    # BALANCE: near VWAP / extremos -> contencion "real"
+    # (si quieres mantenerlo TREND-centric, deja BALANCE_CONTAINMENT;
+    # pero para rescate, mira estabilidad vs degradacion)
+    LOOK_FOR_balance_vwap_proximity: BALANCE_STABILITY
+    LOOK_FOR_balance_extreme_to_center: BALANCE_STABILITY
+
+    # BALANCE: compression/coil
+    # Hoy te da negativo con BALANCE_ESCAPE (hit TREND).
+    # Antes de cambiar LF, cambia la lupa:
+    # - si coil es "se desarma a transition" => BALANCE_DEGRADATION
+    # - si coil es "se sostiene" => BALANCE_STABILITY
+    LOOK_FOR_balance_compression: BALANCE_STABILITY
+    
+    # Balance Vwap Body deviation
+    LOOK_FOR_balance_vwap_body_deviation: BALANCE_STABILITY
+
+    # TREND: se mantiene tal cual (te está dando edge)
+    LOOK_FOR_trend_strong_orderly: STATE_REINFORCEMENT
+    LOOK_FOR_trend_prev_vwap_pullback: STATE_REINFORCEMENT
+    LOOK_FOR_trend_liquidity_sweep: STATE_FRAGILITY
+
+    # TRANSITION: chop cerca VWAP
+    # En vez de medir "no llega a TREND" (noise), prueba "vuelve a BALANCE"
+    LOOK_FOR_transition_chop_near_vwap: TRANSITION_PERSISTENCE
+
+    # TRANSITION: acceptance
+    # Esto sí es "resuelve" => hit TREND
+    LOOK_FOR_transition_acceptance: TRANSITION_RESOLUTION
+
+# -------------------------------------------------
+# (Opcional) legacy_price mode only (no lo uses en baseline mode)
+# -------------------------------------------------
+# phase_e:
+#   edge_metric:
+#     by_state:
+#       BALANCE: { better_is: LOWER }
+#       TREND: { better_is: HIGHER }
+#       TRANSITION: { better_is: HIGHER }

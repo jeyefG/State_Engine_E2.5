@@ -1,0 +1,248 @@
+version: 1
+symbol: "XAUUSD.mg"
+
+# --- Global hard limits (anti-deriva) ---
+limits:
+  max_positions: 1
+  max_trades_per_day: 6
+  daily_stop_R: -1.5
+  allow_overlapping_trades: false
+
+# --- GO/NO-GO thresholds (no optimizar por PnL) ---
+go_thresholds:
+  min_n_bars: 300
+  min_uplift_pp: 3.9
+  min_wf_score: 0.0
+
+# --- Context selection order (IMPORTANT) ---
+# Parche: priorizar STATE_LF para NO perder LF cuando QL viene NONE
+context_resolution:
+  priority:
+    - "STATE_QL_LF"
+    - "STATE_LF"
+    - "STATE_QL"
+    - "STATE"
+  none_token: "NONE"
+
+# --- LOOK_FOR synthesizer ---
+lf_synth:
+  none_token: "NONE"
+  prefix: "LOOK_FOR_"
+  priority:
+    - "LOOK_FOR_trend_strong_orderly"
+    - "LOOK_FOR_trend_prev_vwap_pullback"
+    - "LOOK_FOR_balance_compression"
+    - "LOOK_FOR_balance_vwap_proximity"
+    - "LOOK_FOR_transition_chop_near_vwap"
+
+# --- Risk profiles ---
+risk_profiles:
+  RP_TCP:
+    risk_per_trade: 0.005
+    cooldown_bars: 4
+    time_stop_bars: 16
+    trailing: true
+
+  RP_RIS:
+    risk_per_trade: 0.003
+    cooldown_bars: 3
+    time_stop_bars: 10
+    trailing: false
+
+  RP_RIS_LITE:
+    risk_per_trade: 0.002
+    cooldown_bars: 6
+    time_stop_bars: 8
+    trailing: false
+
+# --- Trade templates parameters ---
+templates:
+  TCP:
+    entry:
+      trigger_type: "PULLBACK_SIMPLE"
+      trigger_window_bars: 6
+    exits:
+      invalidate_on_context_block: true
+
+  RIS:
+    entry:
+      trigger_type: "REVERSION_SIMPLE"
+      trigger_window_bars: 4
+    exits:
+      invalidate_on_context_block: true
+
+  RIS_LITE:
+    entry:
+      trigger_type: "REVERSION_SIMPLE"
+      trigger_window_bars: 3
+    exits:
+      invalidate_on_context_block: true
+
+go_contexts:
+
+  # --- TREND / STATE_REINFORCEMENT (TCP) ---
+  - context_key: "STATE=TREND|QL=TREND_STRONG|LF=LOOK_FOR_trend_strong_orderly"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=TREND_UNCLASSIFIED|LF=LOOK_FOR_trend_strong_orderly"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=TREND_FRAGILE|LF=LOOK_FOR_trend_strong_orderly"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=TREND_STRONG|LF=LOOK_FOR_trend_prev_vwap_pullback"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=TREND_UNCLASSIFIED|LF=LOOK_FOR_trend_prev_vwap_pullback"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=TREND_FRAGILE|LF=LOOK_FOR_trend_prev_vwap_pullback"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  # fallback coarse
+  - context_key: "STATE=TREND|QL=NONE|LF=LOOK_FOR_trend_strong_orderly"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+  - context_key: "STATE=TREND|QL=NONE|LF=LOOK_FOR_trend_prev_vwap_pullback"
+    trade_template: "TCP"
+    risk_profile: "RP_TCP"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "STATE_REINFORCEMENT"
+
+
+  # --- BALANCE / BALANCE_STABILITY (RIS) ---
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_COMPRESSING|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_STABLE|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_LEAKING|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_COMPRESSING|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=BALANCE_STABLE|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  # fallback coarse
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+  - context_key: "STATE=BALANCE|QL=NONE|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+
+
+  # --- TRANSITION / TRANSITION_PERSISTENCE ---
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_NOISY|LF=LOOK_FOR_transition_chop_near_vwap"
+    trade_template: "TCP"
+    risk_profile: "RP_RIS_LITE"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_UNCLASSIFIED|LF=LOOK_FOR_transition_chop_near_vwap"
+    trade_template: "TCP"
+    risk_profile: "RP_RIS_LITE"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_FAILED|LF=LOOK_FOR_transition_chop_near_vwap"
+    trade_template: "TCP"
+    risk_profile: "RP_RIS_LITE"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+
+  # fallback coarse
+  - context_key: "STATE=TRANSITION|QL=NONE|LF=LOOK_FOR_transition_chop_near_vwap"
+    trade_template: "TCP"
+    risk_profile: "RP_RIS_LITE"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+    
+  # --- TRANSITION PERSISTENCE (NOISY) ---
+  - context_key: "STATE=TRANSITION|QL=TRANSITION_NOISY|LF=LOOK_FOR_transition_chop_near_vwap"
+    trade_template: "TCP"
+    risk_profile: "RP_RIS_LITE"
+    direction_policy: "WITH_TREND"
+    expected_baseline_id: "TRANSITION_PERSISTENCE"
+  
+  # --- BALANCE VWAP PROXIMITY ---
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_vwap_proximity"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+  
+  # --- BALANCE COMPRESSION ---
+  - context_key: "STATE=BALANCE|QL=BALANCE_UNCLASSIFIED|LF=LOOK_FOR_balance_compression"
+    trade_template: "RIS"
+    risk_profile: "RP_RIS"
+    direction_policy: "BOTH"
+    expected_baseline_id: "BALANCE_STABILITY"
+      
+# --- risk-off flags ---
+# Importante: NO bloquear el mismo contexto que quieres monetizar en go_contexts.
+risk_off:
+  - context_key: "STATE=TREND|QL=TREND_FRAGILE|LF=NONE"
+    action: "BLOCK_NEW_TRADES"
