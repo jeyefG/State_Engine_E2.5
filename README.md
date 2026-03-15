@@ -195,3 +195,36 @@ BALANCE_RESCUE_GRID_EXTENDED
 axis    ses   age   dvwap        n  pct_state        ev       p10       p50       p90     delta  stable_n atr_bucket
 ses,age NY    0-2   <=0.5      118   12.340000  0.000120 -0.000300  0.000100  0.000500  0.000020         2       1-1.25
 ```
+
+## Fase F usando output ML (Phase E.5 V1) en vez de `decisions_with_side.csv` del direction layer
+
+Si quieres reemplazar el `decisions_with_side.csv` construido por `scripts/phase_f_direction_layer.py`, ahora puedes usar directamente las predicciones de `scripts/train_phase_e5_v1_model.py` con un adaptador plug-and-play:
+
+```bash
+python scripts/phase_f_ml_layer_adapter.py \
+  --symbol XAUUSD.mg \
+  --ml_predictions outputs/phase_e5_v1/<dataset>_predictions_test.parquet \
+  --phase_f_decisions_csv outputs/phase_f_runs/XAUUSD.mg/<run_id>/decisions.csv \
+  --enriched_parquet outputs/phase_f_enriched/<enriched>.parquet \
+  --out_csv outputs/phase_f_runs/XAUUSD.mg/<run_id>/decisions_with_side_ml.csv
+```
+
+Qué hace el adaptador:
+
+- `pred_label=LONG|SHORT` → `decision=ALLOW` y `side_intent=LONG|SHORT`.
+- `pred_label=NO_TRADE` (u otro label no permitido) → `decision=BLOCK` y `side_intent=NONE`.
+- Crea `setup_family=ml_phase_e5_v1` para ALLOW (y `blocked_ml` para BLOCK).
+- Si pasas `--phase_f_decisions_csv`, agrega por merge columnas de Fase F (`context_key`, `meta_baseline_id`, etc.).
+- Si pasas `--enriched_parquet`, agrega OHLC/VWAP para auditorías/backtests.
+
+### Flujo recomendado
+
+1. Correr `run_phase_f.py` para obtener `decisions.csv` (contexto estructural/policy).
+2. Entrenar y generar predicciones con `train_phase_e5_v1_model.py`.
+3. Adaptar predicciones ML con `phase_f_ml_layer_adapter.py`.
+4. Usar el CSV resultante en scripts que hoy esperan `decisions_with_side.csv` (por ejemplo `backtest_allow_episodes.py`, `audit_phase_f_mfe_mae.py`).
+
+### Nota de compatibilidad
+
+El contrato mínimo para backtests de episodios es: `decision`, `ts`, `setup_family`, `side_intent` (más `symbol` recomendado).
+El adaptador lo garantiza incluso sin merges opcionales.
