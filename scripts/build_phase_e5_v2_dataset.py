@@ -338,9 +338,11 @@ def build_dataset(ctx: pd.DataFrame, cfg: BuildConfig, require_lf_active: bool) 
     lf_cols = discover_lf_cols(ctx)
     ql_col = ql_col_name(ctx)
 
-    universe = add_backbone_columns(ctx, lf_cols=lf_cols, ql_col=ql_col)
-    universe = mark_episode_starts(universe, context_tf=cfg.context_tf)
+    # Contexto enriquecido para features
+    ctx_feat = add_backbone_columns(ctx, lf_cols=lf_cols, ql_col=ql_col)
+    ctx_feat = mark_episode_starts(ctx_feat, context_tf=cfg.context_tf)
 
+    universe = ctx_feat.copy()
     if require_lf_active:
         universe = universe[universe["lf_active_count"] > 0].copy()
 
@@ -351,8 +353,12 @@ def build_dataset(ctx: pd.DataFrame, cfg: BuildConfig, require_lf_active: bool) 
 
     rows: list[dict] = []
     for symbol, g in universe.groupby("symbol", dropna=False):
-        g_ctx = ctx[ctx["symbol"].astype(str) == str(symbol)].sort_values("time").reset_index(drop=True)
-        time_to_idx = {t: i for i, t in enumerate(g_ctx["time"]) }
+        # Para features de ventana usar contexto enriquecido
+        g_feat = ctx_feat[ctx_feat["symbol"].astype(str) == str(symbol)].sort_values("time").reset_index(drop=True)
+        # Para targets futuros basta con OHLC + scale; ctx_feat también lo contiene
+        g_target = g_feat
+
+        time_to_idx = {t: i for i, t in enumerate(g_feat["time"])}
 
         for _, r in g.iterrows():
             ts = r["time"]
@@ -362,7 +368,7 @@ def build_dataset(ctx: pd.DataFrame, cfg: BuildConfig, require_lf_active: bool) 
 
             left = max(0, ridx - cfg.lookback_bars + (1 if cfg.include_current_bar else 0))
             right = ridx + 1 if cfg.include_current_bar else ridx
-            hist = g_ctx.iloc[left:right].copy()
+            hist = g_feat.iloc[left:right].copy()
 
             base = {
                 "timestamp": ts,
@@ -382,7 +388,7 @@ def build_dataset(ctx: pd.DataFrame, cfg: BuildConfig, require_lf_active: bool) 
 
             base = add_window_features(hist, base, lf_cols)
             target = build_soft_targets(
-                g_ctx,
+                g_target,
                 ridx,
                 cfg.horizon_bars,
                 cfg.scale_col,
@@ -395,6 +401,7 @@ def build_dataset(ctx: pd.DataFrame, cfg: BuildConfig, require_lf_active: bool) 
     ds = pd.DataFrame(rows)
     ds = ds.sort_values(["timestamp", "symbol"]).reset_index(drop=True)
     return ds
+
 
 
 def main() -> None:
