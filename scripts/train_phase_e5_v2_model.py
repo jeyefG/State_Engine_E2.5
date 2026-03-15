@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--min-samples-leaf", type=int, default=40)
     ap.add_argument("--side-threshold", type=float, default=0.55)
     ap.add_argument("--abstain-threshold", type=float, default=0.55)
+    ap.add_argument("--margin-threshold", type=float, default=0.05)
     ap.add_argument("--random-state", type=int, default=42)
     return ap.parse_args()
 
@@ -56,6 +57,8 @@ def infer_feature_columns(df: pd.DataFrame, split_col: str, drop_cols: Iterable[
         "up_excursion",
         "down_excursion",
         "local_scale",
+        "episode_id",
+        "episode_bar_index",
     }
     return [c for c in df.columns if c not in banned]
 
@@ -90,7 +93,7 @@ def _clip01(x: np.ndarray) -> np.ndarray:
     return np.clip(x, 0.0, 1.0)
 
 
-def to_outputs(pred: np.ndarray, side_threshold: float, abstain_threshold: float) -> pd.DataFrame:
+def to_outputs(pred: np.ndarray, side_threshold: float, abstain_threshold: float, margin_threshold: float) -> pd.DataFrame:
     long_s = _clip01(pred[:, 0])
     short_s = _clip01(pred[:, 1])
     abstain_s = _clip01(pred[:, 2])
@@ -99,11 +102,11 @@ def to_outputs(pred: np.ndarray, side_threshold: float, abstain_threshold: float
     confidence = np.maximum(long_s, short_s)
 
     recommended = np.where(
-        (abstain_s >= abstain_threshold) | (confidence < side_threshold),
+        (abstain_s >= abstain_threshold) | (confidence < side_threshold) | (np.abs(margin) < margin_threshold),
         "ABSTAIN",
         np.where(long_s >= short_s, "LONG", "SHORT"),
     )
-
+    
     return pd.DataFrame(
         {
             "e5_long_score": long_s,
@@ -184,26 +187,26 @@ def main() -> None:
     pred_val = pipe.predict(X_val)
     pred_test = pipe.predict(X_test)
 
-    val_scores = to_outputs(pred_val, args.side_threshold, args.abstain_threshold)
-    test_scores = to_outputs(pred_test, args.side_threshold, args.abstain_threshold)
+    val_scores = to_outputs(pred_val, args.side_threshold, args.abstain_threshold, args.margin_threshold)
+    test_scores = to_outputs(pred_test, args.side_threshold, args.abstain_threshold, args.margin_threshold)
 
     true_side_val = pseudo_true_side(val, args.side_threshold, args.abstain_threshold)
     true_side_test = pseudo_true_side(test, args.side_threshold, args.abstain_threshold)
 
     summary = {
         "rows": int(len(ds)),
-        "train": int(len(train)),
-        "val": int(len(val)),
-        "test": int(len(test)),
+        "n_train": int(len(train)),
+        "n_val": int(len(val)),
+        "n_test": int(len(test)),
         "feature_count": len(feature_cols),
         "constant_cols_dropped": constant_cols,
-        "val": {
+        "metrics_val": {
             **metrics(y_val, pred_val),
-            "side_accuracy": side_accuracy(val_scores["e5_recommended_side"].to_numpy(), true_side_val),
+            "derived_side_agreement": side_accuracy(val_scores["e5_recommended_side"].to_numpy(), true_side_val),
         },
-        "test": {
+        "metrics_test": {
             **metrics(y_test, pred_test),
-            "side_accuracy": side_accuracy(test_scores["e5_recommended_side"].to_numpy(), true_side_test),
+            "derived_side_agreement": side_accuracy(test_scores["e5_recommended_side"].to_numpy(), true_side_test),
         },
     }
 
