@@ -269,3 +269,76 @@ Solo el tercer contrato habilita capital real.
 El sistema actual está bien encaminado para describir y validar estructura, pero el salto a monetización falla porque **no existe un contrato explícito de capturabilidad** entre E y F.
 
 La solución de fondo no es tuning ni reemplazar una pieza aislada: es introducir una capa puente que convierta edge descriptivo en edge operativamente certificable, manteniendo la disciplina causal y la separación epistemológica del proyecto.
+
+---
+
+## H) ¿Tiene sentido que la capa puente use ML? Sí, pero con rol acotado por contrato
+
+### H.1 Respuesta corta
+
+Sí, **puede** tener sentido usar ML en la capa intermedia, pero solo si el ML se usa como
+**modelador de capturabilidad/mechanism-fit** y no como reemplazo del contrato de fases.
+
+Si el ML intenta “predecir LONG/SHORT/NO_TRADE” sin anclarse al mecanismo pagador, repite
+el problema observado en E.5 V1/V2: mejora research local y falla OOS.
+
+### H.2 Diseño recomendado: capa puente híbrida (determinística + ML)
+
+La capa puente debería tener dos submódulos:
+
+1. **Submódulo determinístico de elegibilidad epistemológica**
+   - Verifica que el contexto viene de D/E válidos (lupa canónica, estabilidad mínima, cobertura mínima).
+   - Si falla, el contexto no entra a monetización (queda en INFO_ONLY).
+
+2. **Submódulo ML de “capturabilidad condicionada”**
+   - No decide trades directamente.
+   - Estima probabilidades/score de que un contexto sea capturable por cada clase de mecanismo/template,
+     bajo fricción y horizonte operativo explícitos.
+
+Esto preserva separación de fases: D/E siguen descriptivo-estructurales; ML sólo opera en la
+traducción a contrato operativo.
+
+### H.3 Qué target debería modelar ese ML (y cuál no)
+
+**No recomendado como target primario:**
+- `LONG/SHORT/NO_TRADE` global directo.
+
+**Recomendado como target primario:**
+- `P(capturable | contexto, mecanismo, template, fricción, horizonte)`
+- `P(failure_mode_j | ...)`
+- score de compatibilidad contexto-template.
+
+En la práctica, el output del ML debería ser un vector por contexto:
+
+- `mechanism_probs` (continuation/resolution/mean-revert/etc.),
+- `template_fit_scores`,
+- `direction_reliability` (solo dentro de template compatible),
+- `friction_sensitivity` y `horizon_window`.
+
+### H.4 Contrato de salida de la capa puente (consumible por F)
+
+La salida debe ser una certificación operativa, por ejemplo:
+
+- `tradeability_status`: `TRADEABLE | INFO_ONLY | NO_GO`
+- `allowed_templates`: conjunto permitido
+- `side_policy`: `BOTH | BIASED_LONG | BIASED_SHORT | ABSTAIN_PREFERRED`
+- `risk_envelope`: límites de riesgo/holding coherentes
+- `confidence_band` + `invalidators`
+
+F entonces **no infiere edge**; solo ejecuta políticas dentro de este sobre operativo.
+
+### H.5 Guardrails para que ML no rompa la validez conceptual
+
+1. **No reescribir D/E**: ML no cambia state, QL, LF ni lupas.
+2. **No usar output económico antes de contrato puente**: PnL entra solo para calibrar capturabilidad,
+   no para redefinir ontología descriptiva.
+3. **Promoción por estabilidad temporal**: un contexto no pasa a TRADEABLE por un único slice.
+4. **Permitir nulo explícito**: `INFO_ONLY` es salida válida y frecuente.
+
+### H.6 Decisión final sobre ML
+
+- **Sí a ML** como componente de la capa intermedia.
+- **No a ML** como “atajo de señal” que saltea el contrato entre edge descriptivo y edge ejecutable.
+
+En términos prácticos: la capa puente puede ser ML, pero su misión no es adivinar trades;
+es **certificar capturabilidad operativa** de narrativas ya validadas estructuralmente.
