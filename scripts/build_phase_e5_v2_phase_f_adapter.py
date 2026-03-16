@@ -148,7 +148,12 @@ def main() -> int:
     out["side_intent_final"] = out["side_intent_orig"]
     out.loc[use_e5, "side_intent_final"] = out.loc[use_e5, "e5_side"]
 
+    # 1 si E.5 fue usado como fuente del side final
     out["e5_override_applied"] = use_e5.astype(int)
+
+    # 1 si efectivamente el side final quedó distinto al original
+    out["e5_side_changed"] = (out["side_intent_orig"] != out["side_intent_final"]).astype(int)
+
     out["e5_override_reason"] = "no_change_non_allow"
     out.loc[use_e5, "e5_override_reason"] = "use_e5_side"
     out.loc[fallback_abstain, "e5_override_reason"] = "fallback_abstain"
@@ -186,7 +191,7 @@ def main() -> int:
     override_n = int(out["e5_override_applied"].sum())
     fallback_abstain_n = int((out["e5_override_reason"] == "fallback_abstain").sum())
     fallback_missing_n = int((out["e5_override_reason"] == "fallback_missing").sum())
-    changed_side_n = int((out["side_intent_orig"] != out["side_intent_final"]).sum())
+    changed_side_n = int(out["e5_side_changed"].sum())
 
     print("OK - Phase E.5 V2 -> Phase F adapter built")
     print(f"- input_rows_original: {len(decisions)}")
