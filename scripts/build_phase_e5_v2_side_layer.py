@@ -81,6 +81,7 @@ def load_parquet_union(paths: list[str], symbol: str | None) -> pd.DataFrame:
     if symbol is not None:
         out = out[out["symbol"].astype(str) == str(symbol)].copy()
 
+    out = out.drop_duplicates(subset=["symbol", "time"], keep="last").copy()
     return out.sort_values(["symbol", "time"]).reset_index(drop=True)
 
 
@@ -152,21 +153,42 @@ def build_side_layer(
     lf_cols = discover_lf_cols(context)
     ql_col = ql_col_name(context)
 
+    # Reconstrucción de backbone contextual y episodios
     ctx = add_backbone_columns(context, lf_cols=lf_cols, ql_col=ql_col)
     ctx = mark_episode_starts(ctx, context_tf=context_tf)
 
+    # Validar scores mínimos esperados
     validate_scores(scores)
+
     score_keep = ["symbol", "time", *sorted(REQUIRED_SCORE_COLS)]
     available_keep = [c for c in score_keep if c in scores.columns]
     score_base = scores[available_keep].copy()
-    score_base["e5_has_prediction"] = 1
 
+    # Esta bandera marca solo la barra exacta donde hubo score de episode_start
+    score_base["e5_has_episode_start_prediction"] = 1
+
+    # Join exacto por symbol/time
     merged = ctx.merge(score_base, on=["symbol", "time"], how="left", validate="m:1")
 
+    # Si faltó alguna columna requerida por el lado derecho, crearla
     for col in REQUIRED_SCORE_COLS:
         if col not in merged.columns:
             merged[col] = np.nan
-    merged["e5_has_prediction"] = merged["e5_has_prediction"].fillna(0).astype(int)
+
+    merged["e5_has_episode_start_prediction"] = (
+        merged["e5_has_episode_start_prediction"].fillna(0).astype(int)
+    )
+
+    # Sanity check crítico:
+    # si un score cae en una barra que NO es episode_start, hay inconsistencia
+    bad_score_rows = merged[
+        (merged["e5_has_episode_start_prediction"] == 1) & (~merged["e5_is_episode_start"])
+    ]
+    if len(bad_score_rows):
+        raise ValueError(
+            f"Found {len(bad_score_rows)} score rows aligned to bars that are not episode_start. "
+            "Episode logic between V2 dataset builder and side-layer adapter may be inconsistent."
+        )
 
     carry_cols = [
         "e5_long_score",
@@ -176,9 +198,23 @@ def build_side_layer(
         "e5_confidence",
         "e5_recommended_side",
     ]
-    merged[carry_cols] = merged.groupby(["symbol", "e5_episode_id"], dropna=False)[carry_cols].ffill()
 
+    # Forward-fill solo dentro del mismo episodio y símbolo
+    merged[carry_cols] = (
+        merged.groupby(["symbol", "e5_episode_id"], dropna=False)[carry_cols].ffill()
+    )
+
+    # Esta bandera marca cualquier barra que ya tenga predicción disponible
+    merged["e5_has_prediction"] = (
+        merged["e5_long_score"].notna()
+        | merged["e5_short_score"].notna()
+        | merged["e5_abstain_score"].notna()
+    ).astype(int)
+
+    # Semántica operacional: ABSTAIN = sin resolución direccional, no BLOCK
     merged["e5_side"] = merged["e5_recommended_side"].fillna("ABSTAIN").astype(str)
+
+    # Metadata del modelo / thresholds
     merged["e5_model_tag"] = str(model_tag)
     merged["e5_side_threshold"] = float(side_threshold)
     merged["e5_abstain_threshold"] = float(abstain_threshold)
@@ -189,6 +225,7 @@ def build_side_layer(
         "time",
         "e5_episode_id",
         "e5_is_episode_start",
+        "e5_has_episode_start_prediction",
         "e5_has_prediction",
         "e5_side",
         "e5_long_score",
@@ -201,9 +238,9 @@ def build_side_layer(
         "e5_abstain_threshold",
         "e5_margin_threshold",
     ]
+
     out = merged[out_cols].sort_values(["symbol", "time"]).reset_index(drop=True)
     return out
-
 
 def write_output(df: pd.DataFrame, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
